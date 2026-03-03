@@ -1,0 +1,18 @@
+{
+  "name": "adex-api",
+  "version": "1.0.0",
+  "description": "AdEx Programmatic Ad Server API",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "cors": "^2.8.5",
+    "pg": "^8.11.3",
+    "geoip-lite": "^1.4.7"
+  },
+  "engines": {
+    "node": ">=18.x"
+  }
+}

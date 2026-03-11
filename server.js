@@ -100,9 +100,66 @@ app.post('/api/v1/ad', async (req, res) => {
             console.log(`📊 Tracking hash has ${viewCount} previous views`);
             
             if (viewCount >= 5) {
-                console.log('⚠️ Frequency cap reached (5 views)');
+                console.log('⚠️ Frequency cap reached (5 views) - serving AdSense');
+                
+                // Serve AdSense when frequency cap reached
+                const adsenseConfig = {
+                    client: process.env.ADSENSE_CLIENT_ID || 'ca-pub-XXXXXXXXXXXXXXXX',
+                    slot: process.env.ADSENSE_SLOT_ID || '1234567890',
+                    format: 'auto',
+                    fullWidthResponsive: true
+                };
+                
+                const adsenseHTML = `
+                    <div style="text-align: center; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+                        <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseConfig.client}"
+                                crossorigin="anonymous"></script>
+                        <ins class="adsbygoogle"
+                             style="display:block"
+                             data-ad-client="${adsenseConfig.client}"
+                             data-ad-slot="${adsenseConfig.slot}"
+                             data-ad-format="${adsenseConfig.format}"
+                             data-full-width-responsive="${adsenseConfig.fullWidthResponsive}"></ins>
+                        <script>
+                             (adsbygoogle = window.adsbygoogle || []).push({});
+                        </script>
+                    </div>
+                `;
+                
+                const estimatedCPM = 5.00;
+                const revenuePerImpression = estimatedCPM / 1000;
+                const adsenseRevenue = {
+                    total: revenuePerImpression,
+                    carrier: revenuePerImpression * 0.5,
+                    adex: revenuePerImpression * 0.5
+                };
+                
+                const impressionId = await logImpression({
+                    adId: null,
+                    campaignId: null,
+                    carrierId: carrier,
+                    source: 'google_adsense_frequency_cap',
+                    cpm: estimatedCPM,
+                    carrierRevenue: adsenseRevenue.carrier,
+                    adexRevenue: adsenseRevenue.adex,
+                    ip: clientIp,
+                    userAgent: req.headers['user-agent'],
+                    geo: geo,
+                    device: device,
+                    shipper: shipper,
+                    trackingHash: trackingHash
+                });
+                
                 return res.json({
                     source: 'google_adsense',
+                    impressionId: impressionId,
+                    adId: null,
+                    campaignId: null,
+                    advertiser: 'Google AdSense',
+                    cpm: estimatedCPM,
+                    html: adsenseHTML,
+                    clickUrl: null,
+                    trackingUrl: null,
                     fallback: true,
                     reason: 'frequency_cap'
                 });
@@ -127,11 +184,72 @@ app.post('/api/v1/ad', async (req, res) => {
         const campaigns = await pool.query(campaignQuery, [carrier, geo.country]);
         
         if (campaigns.rows.length === 0) {
-            console.log('No campaigns found - returning AdSense');
+            console.log('No campaigns found - serving AdSense fallback');
+            
+            // AdSense fallback configuration
+            const adsenseConfig = {
+                client: process.env.ADSENSE_CLIENT_ID || 'ca-pub-XXXXXXXXXXXXXXXX',
+                slot: process.env.ADSENSE_SLOT_ID || '1234567890',
+                format: 'auto',
+                fullWidthResponsive: true
+            };
+            
+            // Generate AdSense HTML
+            const adsenseHTML = `
+                <div style="text-align: center; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseConfig.client}"
+                            crossorigin="anonymous"></script>
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="${adsenseConfig.client}"
+                         data-ad-slot="${adsenseConfig.slot}"
+                         data-ad-format="${adsenseConfig.format}"
+                         data-full-width-responsive="${adsenseConfig.fullWidthResponsive}"></ins>
+                    <script>
+                         (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
+                </div>
+            `;
+            
+            // Calculate revenue (estimated $5 CPM for AdSense)
+            const estimatedCPM = 5.00;
+            const revenuePerImpression = estimatedCPM / 1000;
+            const adsenseRevenue = {
+                total: revenuePerImpression,
+                carrier: revenuePerImpression * 0.5,
+                adex: revenuePerImpression * 0.5
+            };
+            
+            // Log AdSense impression
+            const impressionId = await logImpression({
+                adId: null,
+                campaignId: null,
+                carrierId: carrier,
+                source: 'google_adsense',
+                cpm: estimatedCPM,
+                carrierRevenue: adsenseRevenue.carrier,
+                adexRevenue: adsenseRevenue.adex,
+                ip: clientIp,
+                userAgent: req.headers['user-agent'],
+                geo: geo,
+                device: device,
+                shipper: shipper,
+                trackingHash: trackingHash
+            });
+            
+            console.log(`✅ AdSense impression logged: ${impressionId}`);
+            
             return res.json({
                 source: 'google_adsense',
-                fallback: true,
-                reason: 'no_campaigns'
+                impressionId: impressionId,
+                adId: null,
+                campaignId: null,
+                advertiser: 'Google AdSense',
+                cpm: estimatedCPM,
+                html: adsenseHTML,
+                clickUrl: null,
+                trackingUrl: null,
+                fallback: true
             });
         }
         
@@ -161,9 +279,65 @@ app.post('/api/v1/ad', async (req, res) => {
         );
         
         if (adQuery.rows.length === 0) {
-            console.log('No ad creative found');
+            console.log('No ad creative found - serving AdSense');
+            
+            const adsenseConfig = {
+                client: process.env.ADSENSE_CLIENT_ID || 'ca-pub-XXXXXXXXXXXXXXXX',
+                slot: process.env.ADSENSE_SLOT_ID || '1234567890',
+                format: 'auto',
+                fullWidthResponsive: true
+            };
+            
+            const adsenseHTML = `
+                <div style="text-align: center; padding: 20px; background: #f9f9f9; border-radius: 8px;">
+                    <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${adsenseConfig.client}"
+                            crossorigin="anonymous"></script>
+                    <ins class="adsbygoogle"
+                         style="display:block"
+                         data-ad-client="${adsenseConfig.client}"
+                         data-ad-slot="${adsenseConfig.slot}"
+                         data-ad-format="${adsenseConfig.format}"
+                         data-full-width-responsive="${adsenseConfig.fullWidthResponsive}"></ins>
+                    <script>
+                         (adsbygoogle = window.adsbygoogle || []).push({});
+                    </script>
+                </div>
+            `;
+            
+            const estimatedCPM = 5.00;
+            const revenuePerImpression = estimatedCPM / 1000;
+            const adsenseRevenue = {
+                total: revenuePerImpression,
+                carrier: revenuePerImpression * 0.5,
+                adex: revenuePerImpression * 0.5
+            };
+            
+            const impressionId = await logImpression({
+                adId: null,
+                campaignId: null,
+                carrierId: carrier,
+                source: 'google_adsense',
+                cpm: estimatedCPM,
+                carrierRevenue: adsenseRevenue.carrier,
+                adexRevenue: adsenseRevenue.adex,
+                ip: clientIp,
+                userAgent: req.headers['user-agent'],
+                geo: geo,
+                device: device,
+                shipper: shipper,
+                trackingHash: trackingHash
+            });
+            
             return res.json({
                 source: 'google_adsense',
+                impressionId: impressionId,
+                adId: null,
+                campaignId: null,
+                advertiser: 'Google AdSense',
+                cpm: estimatedCPM,
+                html: adsenseHTML,
+                clickUrl: null,
+                trackingUrl: null,
                 fallback: true,
                 reason: 'no_creative'
             });
